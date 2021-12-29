@@ -1,0 +1,29 @@
+How to setup SSH on a Router or Switch
+1.   First, define a domain name on the switch.
+ip domain name mywebsitedomain.com
+
+2.   Next, generate an SSH key.  The default key is 512 bits, so I usually create a key that is at least 2048 bits.
+crypto key generate rsa modulus 2048
+
+3.   I also specify SSH version 2, though this is optional.
+ip ssh version 2
+
+4.  I also like to turn on logging for SSH.
+ip ssh logging events
+
+5.  Some other optional parameters are:
+(optional)#ip ssh time-out 30
+(optional)#ip ssh authentication-retries 5
+(optional)#ip ssh source-interface {Fastethernet|Loopback|Port-Channel|etc}
+(optional)#ip ssh maxstartups 3
+
+6.  Get under the VTY lines and specify SSH.
+line vty 0 15
+transport input ssh
+
+To test, you can SSH to the same switch you are working on, as long as the SVI you are SSH 'ing to is "up/up".  Otherwise SSH from another router or switch on your network.  use -l (dash "L") to specify the username:
+ssh -l nbrinkley 10.10.10.1
+It will then prompt you for the password and you will be connected.  If you do not get the password prompt, then go back and check your config, because you have probably missed something.
+
+
+
