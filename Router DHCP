@@ -1,0 +1,17 @@
+Router DHCP Server
+So you need to run a DHCP server, but really do not want to bother those "Server Guys"... Or maybe it's just temporary or for some testing?  Or maybe you just want your DHCP running on your router?
+Well, Cisco IOS can do it for you.  On Cisco routers (and many switches), issue the following commands:
+
+conf t
+ip dhcp excluded-address 10.1.136.1 10.11.136.20        <-- excluded from leasing space (starting address, ending address)
+ip dhcp excluded-address 10.1.139.201 10.11.139.255   <-- excluded from leasing space (starting address, ending address)
+!
+ip dhcp pool NEW_DHCP_SUBNET        <-- Name of DHCP Scope
+   network 10.1.136.0 255.255.252.0        <-- Network Range
+   default-router 10.1.136.1                    <-- Default Gateway
+   dns-server 8.8.8.8 4.4.4.4                    <-- DNS Servers... list as many as you want
+   lease 0 0 10                                       <-- Lease Time (Days/Hrs/Min), This time is 10 minutes
+!
+end
+
+
