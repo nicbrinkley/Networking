@@ -1,0 +1,160 @@
+Switch Basic Config
+(works in routers too... you'll just get a couple errors)
+This allows me to setup a brand new or erased switch in a matter of seconds and not have to remember all the basics that I always put into all my switches.
+Definitely one of my most-used scripts.
+
+------------------------
+
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec localtime show-timezone
+service password-encryption
+!
+logging buffered 16384 informational
+!
+clock timezone PDT -8
+clock summer-time PST recurring
+system mtu routing 1500
+vtp mode transparent
+ip subnet-zero
+no ip domain-lookup
+!
+hostname  ########
+!
+enable secret **PASSWORD_GOES_HERE**
+username administrator privilege 15 secret **PASSWORD_GOES_HERE**
+!
+spanning-tree mode rapid-pvst
+no spanning-tree optimize bpdu transmission
+spanning-tree extend system-id
+!
+vlan #####
+name ######
+exit
+!
+Interface vlan #####
+ip helper-address #####
+!
+snmp-server community **PUBLIC_SNMP_HERE** RO
+snmp-server community **PRIVATE_SNMP_HERE** RW
+!
+line con 0
+ exec-timeout 30 0
+ privilege level 15
+ password **PASSWORD_GOES_HERE**
+ login local
+ logging synch
+line vty 0 4
+ session-timeout 30
+ privilege level 15
+ password **PASSWORD_GOES_HERE**
+ login local
+ logging synch
+line vty 5 15
+ session-timeout 30
+ privilege level 15
+ password **PASSWORD_GOES_HERE**
+ login local
+ logging synch
+!
+ntp server 10.0.0.1
+!
+end
+
+------------------------
+
+
+
+
+
+
+Deeper Dive switch config
+
+------------------------
+!
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec localtime show-timezone
+service password-encryption
+logging buffered 16384 informational
+!
+clock timezone PST -8
+clock summer-time PST recurring
+system mtu routing 1500
+vtp mode transparent
+ip subnet-zero
+no ip domain-lookup
+!
+hostname  ########
+enable secret ##########
+username ############## privilege 15 secret ############
+spanning-tree mode rapid-pvst
+no spanning-tree optimize bpdu transmission
+spanning-tree extend system-id
+!
+vlan #####
+name ######
+exit
+snmp-server community ######## RO
+snmp-server community ######## RW
+!
+line con 0
+ exec-timeout 30 0
+ privilege level 15
+ password #########
+ login local
+ logging synch
+line vty 0 4
+ session-timeout 30
+ privilege level 15
+ password #########
+ login local
+ logging synch
+line vty 5 15
+ session-timeout 30
+ privilege level 15
+ password #########
+ login local
+ logging synch
+!
+ntp server XX.XX.XX.XXX
+!
+end
+!
+Adding Radius
+!
+aaa new-model
+aaa authentication login default group radius local
+aaa authentication enable default group radius none
+aaa authorization console
+!
+snmp-server community ######### RO
+snmp-server community ######### RW
+snmp-server enable traps license
+radius-server dead-criteria time 5 tries 2
+radius-server host XX.XX.XX.XXX auth-port 1645 acct-port 1646 key **************************
+radius-server host XX.XX.XX.XXX auth-port 1645 acct-port 1646 key **************************
+radius-server source-ports 1645-1646
+radius-server retransmit 2
+radius-server timeout 2
+!
+banner motd ^
+
+****************************************************************
+* This computer system is the property of ##### and may be     *
+* accessed only by authorized users. Unauthorized use of this  *
+* system is strictly prohibited and may be subject to criminal *
+* prosecution. ##### reserves the right to monitor any         *
+* activity or communication on the system and may retrieve any *
+* information stored within the system. By accessing and using *
+* this system, you are consenting to such monitoring and       *
+* information retrieval for law enforcement and other purposes.*
+* Users should have no expectation of privacy.                 *
+****************************************************************
+^
+!
+ntp server XX.XX.XX.XXX
+!
+------------------------
+
+
+
+
