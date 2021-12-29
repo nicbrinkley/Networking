@@ -1,0 +1,29 @@
+How to TFTP a file onto a device
+Obtain a TFTP server, install it to your laptop or PC, and create a TFTP folder... my preferred TFTP server is available from Solar Winds here:
+http://www.solarwinds.com/products/freetools/free_tftp_server.aspx
+
+Next, place the files you want to transfer from your PC into the TFTP folder and make sure your server sees the path to this folder and file
+From the Switch, Router, or AP, enter the command line (outside of config mode) and issue the copy command.  You can either perform this step by step through the command line, or you can perform this with just a single line
+
+Router#copy tftp://192.168.100.1/http://Source_File_123.ext flash:
+Destination filename [Source_File_123.ext]?
+Accessing tftp://192.168.100.1/http://Source_File_123.ext...
+
+or
+
+Router#copy tftp flash
+Address or name of remote host? 192.168.100.1
+Source filename? Source_File_123.ext
+Destination filename [Source_File_123.ext]?
+Accessing tftp://192.168.100.1/http://Source_File_123.ext...
+
+
+Sometimes it is not possible to TFTP a file onto a device because the file size is too large ( i.e. >32MB).  In this scenario you may need to FTP and you may need to include a username and password.  For those that have not done this before, the task may be a bit perplexing, but you simply need to add the username and password, separated by a colon before the FTP server IP address.
+My preferred ftp server is Xlight FTP and can be downloaded for free from:
+http://www.xlightftpd.com/download.htm
+
+The example below show how to FTP a file onto Flash from a routers command line using the username: cisco and password: cisco123.
+
+Router# copy ftp://cisco:cisco123@192.168.100.1/Source_Filename.ext flash:
+
+
