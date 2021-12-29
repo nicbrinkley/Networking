@@ -1,0 +1,56 @@
+Simple Static NAT
+Basically takes any packets coming in Gig 0/0 that match access-list 1 (currently "permit any") and NAT's them to the IP address on the Gig 1/0 interface (192.168.100.2).
+
+
+R2(config)#interface g0/0
+R2(config-if)#ip nat inside
+
+R2(config)#interface g1/0
+R2(config-if)#ip nat outside
+
+R2(config)#ip nat inside source list 1 interface gigabitEthernet 1/0
+R2(config)#access-list 1 permit any
+
+R2#sh ip nat translations
+Pro Inside global      Inside local       Outside local      Outside global
+icmp 192.168.100.2:4   10.10.10.1:4       3.3.3.3:4          3.3.3.3:4
+R2#
+
+
+
+Dynamic NAT
+Basically takes any packets coming in Gig 0/0 that match access-list 1 and NAT's them to a predefined pool of IP addresses on R2
+
+R2(config)#interface g0/0
+R2(config-if)#ip nat inside
+
+R2(config)#interface g1/0
+R2(config-if)#ip nat outside
+
+R2(config)#ip nat pool NAT_POOL 10.200.200.100 10.200.200.120 prefix-length 24
+
+R2(config)#access-list 1 deny   2.2.2.2
+R2(config)#access-list 1 deny   192.168.100.0 0.0.0.255
+R2(config)#access-list 1 deny   192.168.222.0 0.0.0.255
+R2(config)#access-list 1 permit any
+
+R2(config)#ip nat inside source list 1 pool NAT_POOL
+
+On R3, make sure there is a default route or something to tell R3 how to find the 10.200.200.0 /24 subnet
+R3(config)#ip route 10.200.200.0 255.255.255.0 192.168.100.2
+
+After pings from R1 gig 0/0 and R1 loopbacks to R3
+R2#sh ip nat translations
+Pro Inside global      Inside local       Outside local      Outside global
+icmp 10.200.200.106:32 1.1.1.1:32         192.168.100.3:32   192.168.100.3:32
+--- 10.200.200.106     1.1.1.1            ---                ---
+icmp 10.200.200.105:35 10.10.10.1:35      192.168.100.3:35   192.168.100.3:35
+--- 10.200.200.105     10.10.10.1         ---                ---
+icmp 10.200.200.107:33 11.11.11.11:33     192.168.100.3:33   192.168.100.3:33
+--- 10.200.200.107     11.11.11.11        ---                ---
+icmp 10.200.200.104:34 12.12.12.12:34     192.168.100.3:34   192.168.100.3:34
+--- 10.200.200.104     12.12.12.12        ---                ---
+R2#
+
+
+
