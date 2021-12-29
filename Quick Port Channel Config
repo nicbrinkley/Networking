@@ -1,0 +1,10 @@
+int port-channel 3
+ip address x.x.x.x (only required for Layer 3 etherchannel)
+end
+int gi 1/1
+channel-group 3
+no shut
+int gi 1/2
+channel-group 3
+end
+do wr
