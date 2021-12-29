@@ -1,0 +1,21 @@
+Validate IOS Integrity w/ MD5 Checksum
+Cisco IOS software command that allows you to check the integrity of a Cisco IOS software image by comparing its MD5 checksum value against a known MD5 checksum value for the image.
+Check the Cisco website for the known valid MD5 value from the IOS version you are checking, by hovering over the IOS Image download link.  A pop-up will appear and show you detailed information about the software version, including the MD5 Checksum.
+You can click on the "clipboard" icon to copy the MD5 value for comparison.  See screenshot below:
+
+
+Now use the "verify /md5 {Location & Filename}" command on the router:
+MT_4321#
+MT_4321#verify /md5 flash://isr4300-universalk9.16.06.05.SPA.bin
+...................................................................
+...................................................................
+(Output omitted for brevity)
+...................................................................
+...................................................................Done!
+verify /md5 (bootflash:/isr4300-universalk9.16.06.05.SPA.bin) = c9c564ec1c39207b065599fe4087884b
+
+MT_4321#
+Below I have pasted the copied checksum from Cisco.com in the CLI, for easy comparison to the above checksum output from the router.
+MT_4321#c9c564ec1c39207b065599fe4087884b
+
+
