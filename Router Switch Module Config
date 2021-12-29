@@ -1,0 +1,55 @@
+Router Switch Module Configuration
+Switch modules in a router can be a little difficult to grasp at first.  While it is an integrated switching module inside of your router, it looks and feels like an independent switch and gets it's own separate config too.
+
+In order for the router and switch to communicate properly there are several commands that need to be done, and depending on if there are VLAN's and / or multiple modules, that changes things slightly too.
+
+In this example, I will show the more complex config.  I am setting up (2) 24 port switch modules in the router, both to be configured within the same subnet's and VLAN's, and both VLAN's to span across both of those modules, so they can essentially replace a 48 port standalone switch without any re-addressing necessary for the end stations.
+
+!
+interface GigabitEthernet1/0                            <-- This interface appears when the switch module is installed and the router is booted.  This is where you could
+ description SWITCH_MODULE                           configure the IP, but we're going to use BVI's so we can span both modules & get 48 ports the same subnet
+ ip address 10.10.10.10 255.255.255.248        <-- An IP is needed for the router to communicate with the switch module, but it does not need to be advertised in
+!                                                                           routing unless you want it to be reachable from outside the router.  This is just a dummy IP
+!
+bridge irb                                                        <-- This is so traffic can pass between the bridge interfaces and the routed interfaces
+!
+interface GigabitEthernet1/0.18                        <-- A sub-interface is used, so the router interface can act like a switch trunk port.  This is for the VoIP traffic.
+ description VOIP                                                this is not necessary if you only need 1 VLAN on the whole switch.  We will have both a VoIP and Data VLAN
+ encapsulation dot1Q 18                                  <-- This tells the router what VLAN the sub-interface belongs to
+ bridge-group 18                                              <-- This tells the router what BVI this sub-interface is mapped to
+!
+interface GigabitEthernet1/0.51                        <-- This is the other sub-interface created.  This one is for Data traffic
+ description DATA
+ encapsulation dot1Q 51
+ bridge-group 51
+!
+interface GigabitEthernet1/1                            <-- This is non-configurable and is used internally by the router to pass the traffic to and from the switch module.
+ description Internal switch interface connected to Service Module
+ no ip address
+!
+(***For brevity, the same configuration would be done on the 2nd switch module, only the interfaces would be GigabitEthernet2/0, GigabitEthernet2/0.18, GigabitEthernet2/0.51 and the backplane interface would be GigabitEthernet2/1)
+!
+interface BVI18                                               <-- Here's the BVI for the VoIP subnet & VLAN
+ description VOIP
+ ip address 192.168.18.1 255.255.255.0           <-- IP for the VoIP VLAN
+ ip helper-address 192.168.25.36                     <-- IP helper if needed for DHCP
+!
+interface BVI51                                              <-- Here's the BVI for the Data subnet & VLAN
+ description DATA
+ ip address  192.168.51.1 255.255.255.0          <-- IP for the DATA VLAN
+ ip helper-address 192.168.25.36                     <-- Again, IP helper if needed for DHCP
+!
+!
+bridge 18 protocol ieee                                   
+bridge 18 route ip
+bridge 51 protocol ieee
+bridge 51 route ip
+!
+(Now you need to connect into each switch module and configure them)
+From the router issue:
+service-module gigabit 1/0 session
+
+Now you'll be in the switch module and you'll configure it just like you would a regular switch.
+Create your VLAN's, add the VLAN to each switchport, add the voice VLAN to each port, create an SVI and give it an IP.  Port 25 is used to communicate back to the router and since we have multiple VLANS, configure that as a trunk.  Now add the default gateway pointing back to the router's BVI, add in all the other necessary commands to finish off the switch config, and it will function just like your standalone switch did.  When it's all done, you'll even be able to ping and telnet directly into the switch modules and not have to hop in from the router first.
+
+
