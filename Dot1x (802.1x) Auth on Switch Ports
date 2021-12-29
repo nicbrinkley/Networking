@@ -1,0 +1,51 @@
+Dot1x (802.1x) Authentication on Switchports
+For when you want to dynamically secure your switchports, based on RADIUS or Active Directory authentication.
+There are 3 pieces to configure here:  1) the client, 2) the RADIUS server, 3) the switch
+But fear not... this is not as difficult as it would seem at first.
+On the client side, you will need to perform a few tasks.  These can likely be done by pushing some sort of group policy, but that is beyond the scope of this tutorial and out of my area of expertise.  Here we will cover the manual process.
+For the Client (Win 7 in this example)
+start by  enabling the "Wired AutoConfig" service and set it to automatic startup
+Run > services.msc > Wired Autoconfig
+Next, under the Network Connections > Local Area Connection properties > Authentication tab, Checkbox "Enable IEEE 802.1x authentication"
+Now chose Microsoft PEAP, and under "settings" you will need to uncheck "validate server certificate" if you ARE NOT installing a server side certificate.
+Keep "Fallback to unauthorized network access" checked if a switchport MAY NOT have dot1x setup and you want the PC obtain connectivity after it tries to authenticate.  Otherwise. if the PC does not receive a response from the RADIUS server it will assume there is no connectivity and you will not get an IP address.
+You'll then need to choose what the PC will use for authentication.  Typically this will be either:  Windows login credentials (MS-PEAP settings button > MSCHAP configure button), or manually set credentials (Additional Settings button > User Authentication drop-down > Save credentials button).
+Now, setup your RADIUS server.  There are several options here... Run the RADIUS service on an existing Windows Domain controller on the network, install 3rd party RADIUS software on a server or workstation on the network, or use something  like Cisco ACS or Cisco ISE for the RADIUS server.  Because I have Cisco ISE already setup in my lab, I chose that and will very briefly outline the basic steps for 802.1x on ISE here.
+(There will also be a detailed tutorial on this to come in the near future)
+Add the switch to ISE as a network device and define a shared RADIUS key
+If using ISE local user database instead of, or in addition to AD, define any local user accounts in ISE
+Add join ISE and the AD server together in ISE under "Ext ID sources", you will need an account created in AD for ISE to join the domain and work with AD.
+Next, modify the Identity source sequences in ISE as appropriate.  For my lab, I setup ISE to use AD first and if the account is not found, then to use the "Internal Users" local database.
+Now create a dot1x authentication policy rule (or modify the default one that came with ISE).  In the screeshot, you can see that I created one just like the default and directed it toward the Identity source sequence I just previously created.
+Lastly, create a Authorization Policy that says, if "Any" and "Network_Access_Authentication_Passed" then "Permit Access", with more specific rules (wireless and guest access) above it.
+Finally, we get to what we really came here for... the switch configuration.
+Make sure your switch has it's basic configuration and is reachable on the network and can reach your RADIUS server.
+In global config perform the following, making changes where necessary to fit your environment:
+conf t
+aaa new-model
+aaa authentication dot1x default group radius
+radius-server host 10.1.11.101 auth-port 1812 acct-port 1813 key My_Radius_Key_123
+dot1x system-auth-control
+!
+interface GigabitEthernet0/5
+ description MY_TEMP_.11_PORT
+ switchport access vlan 11
+ switchport mode access
+ authentication port-control auto
+ dot1x pae authenticator
+!
+end
+Repeat the interface commands above for each interface you require dot1x on, or use the "interface-range" command.
+
+If you need the ports to fallback to "Open" and to NOT authenticate the client should the RADIUS server be unavailable, you can add the following options to the switch config.
+radius-server dead-criteria time 3 tries 3
+radius-server timeout 3
+interface GigabitEthernet0/5
+  authentication event server dead action authorize
+The switch will now allow the client on the port, in the event that it deems the RADIUS server as "Dead".  You'll see something similar to the following log messages when this happens.
+*Aug 19 21:30:04: %RADIUS-4-RADIUS_DEAD: RADIUS server 10.1.11.101:1812,1813 is not responding.
+*Aug 19 21:30:04: %AUTHMGR-7-RESULT: Authentication result 'server dead' from 'dot1x' for client (18a9.05d6.3f7e) on Interface Gi0/7 AuditSessionID 0A100B3B0000006B752A7195
+*Aug 19 21:30:05: %AUTHMGR-5-SUCCESS: Authorization succeeded for client (18a9.05d6.3f7e) on Interface Gi0/7 AuditSessionID 0A100B3B0000006B752A7195
+*Aug 19 21:30:05: %DOT1X-5-RESULT_OVERRIDE: Authentication result overridden for client (18a9.05d6.3f7e) on Interface Gi0/7 AuditSessionID 0A100B3B0000006B752A7195
+
+
