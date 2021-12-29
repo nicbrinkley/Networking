@@ -1,0 +1,38 @@
+How to log SSH login attempts and user info
+Want to know who logged into a device, or attempted to log in to one of your devices?
+This is how you turn on SSH logging and generate log statements in your switch or router's internal logging buffer.
+
+
+Now, the following commands can all be run from the regular Global Config mode (and none are "on" by default):
+
+ip ssh logging events
+-This creates a log statement of an ssh attempt.
+
+login on-success log
+-This logs the username and IP of a successful login.
+
+login on-failure log
+-This logs the username and IP of a failed login attempt.
+
+You don't need both "on-success" and "on-failure" enabled, but you may want both so you know when someone sucessfully logs in, but you'd also then be clued in on a possible brute-force attempt, if you see many failed attempts.
+
+...And if you haven't already done so, you may also want to increase the logging buffer size on your switch or router.
+Most Cisco switches have a very small buffer size set by default, and depending on how many events you have on your network, you may "lose" or "miss" some events due to the log dropping those older events for newer entries.
+At a minimum, I like to set the buffer to 4x of the typical default of 4096 bytes.
+To do this, use the command:
+logging buffered 16384
+
+If you use the "?" you'll see what the platform limitation is:
+MY_3560C(config)#logging buffered ?
+  <4096-2147483647>  Logging buffer size
+
+Now, the switch doesn't have THAT much memory available, but you can see that even if I were to configure a log buffer size of 16x the default (65536 bytes), I would be far from getting close to the maximum permitted, and still be well below what memory space is avaialable.
+Use the command "Show mem" to see what you have available, if you're concerned about using too much of your available memory
+MY_3560C#sh mem
+                        Head        Total(b)         Used(b)       Free(b)       Lowest(b)    Largest(b)
+Processor    3B15AF8    64482440    23641828    40840612    39074056    23238112
+           I/O     6800000      8388608      6667356       1721252      1682832     1700376
+Driver te       2400000      4194304                44       4194260      4194260       194260
+
+
+
