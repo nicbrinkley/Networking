@@ -1,0 +1,30 @@
+Policing Traffic
+Ever have backups or file transfers crush the rest of your traffic running across a circuit?  Want a way to limit how much web traffic can cross the circuit, so everything else doesn't slow down?  Then policing might be what you're looking for...
+
+I use these fairly often, especially when the circuit is low bandwidth like a T1, or when I don't want / need full blown QoS and there is other critical data running across the line that can get impacted by other apps saturating the line.  The config below would need to be applied on both sides if the traffic you are trying to limit is UDP (and you would apply it outbound).  However, If the traffic is TCP, it only needs to be applied on one side.  Because this policy map drops excessive traffic, the very nature of TCP will cause the far end to throttle down it's transmit rate due to the dropped packets and the resend requests.
+The config below limits traffic to and from 192.168.104.114, 192.168.104.112, and 172.16.112.5 to approximately 25mb
+
+!
+class-map match-any FILE_TX_AND_OTHER          <-- matches any of the statements below (use match-all if you require multiple lines to match)
+ description MATCHES_ANY_IP'S_IN_ACL_114
+ match access-group 114
+!
+!
+policy-map FILE_TX                                             
+ description LIMITING_FILE_TRANSFER
+ class FILE_TX_AND_OTHER                                                                             <-- this maps the class map from above to this policy map.
+  police 25000000 conform-action transmit  exceed-action drop  violate-action drop  <-- this limits the traffic to approx 25mb, anything exceeding will be dropped.
+!                                                                                                                            alternatively you could use the exceed-action to mark traffic as discard eligible
+Inter gig 0/1                                                                                                            rather than just dropping it altogether.
+ service-policy input FILE_TX                                                                               <-- apply the policy-map to the interface and specify which direction to look
+!
+access-list 114 permit ip any host 192.168.104.114                                                 
+access-list 114 permit ip host 192.168.104.114 any
+access-list 114 permit ip host 172.16.112.5 any
+access-list 114 permit ip any host 172.16.112.5
+access-list 114 permit ip host 192.168.104.112 any
+access-list 114 permit ip any host 192.168.104.112
+!
+end
+
+
