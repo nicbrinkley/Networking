@@ -1,0 +1,101 @@
+Monitor Capture on a Router
+
+We use this when we need to capture traffic on a router and export it for WireShark analysis.... no need to tap the line on the router or mirror the port.  No need to have someone onsite with a laptop... as long as the router is running Cisco IOS 12.4(20)T it should be a supported feature.
+Update:  In IOS-XE it’s even simpler
+Router# monitor capture CAPTURE interface Gig 0/0/0 both
+Router# monitor capture CAPTURE match ipv4 any any
+Router# monitor capture CAPTURE start
+Router# show monitor capture CAPTURE buffer brief 
+ -------------------------------------------------------------
+#   size   timestamp     source             destination   protocol
+-------------------------------------------------------------
+   0  134    0.000000   192.168.100.1     ->  192.168.100.2     ESP
+   1  134    0.584021   192.168.100.2     ->  192.168.100.1     ESP
+   2  134    4.293976   192.168.100.1     ->  192.168.100.2     ESP
+   3  134    5.072994   192.168.100.2     ->  192.168.100.1     ESP
+   4  134    9.171988   192.168.100.1     ->  192.168.100.2     ESP
+   5  134    9.694016   192.168.100.2     ->  192.168.100.1     ESP
+   6  134   13.972002   192.168.100.1     ->  192.168.100.2     ESP
+   7  134   14.537026   192.168.100.2     ->  192.168.100.1     ESP
+   8  134   18.381984   192.168.100.1     ->  192.168.100.2     ESP
+
+ Router# monitor capture CAPTURE export ftp://10.10.10.2/CAPTURE_7_2019.pcap
+(To export file for wireshark analysis)
+ Router# sho monitor capture
+ (Shows interface capture details)
+ Router# monitor capture CAPTURE stop
+ Router# no monitor capture CAPTURE
+
+See below for IOS method
+Below is a screenshot of the process...  from this you should get the general idea.
+Router#ping 192.168.70.39
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 192.168.70.39, timeout is 2 seconds:
+.!!!!
+Success rate is 80 percent (4/5), round-trip min/avg/max = 1/1/4 ms
+Router#
+Router#
+Router#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Router(config)#access-list 111 perm ip host 192.168.70.39 host 192.168.70.251
+Router(config)#access-list 111 perm ip host 192.168.70.251 host 192.168.70.39
+Router(config)#end
+Router#sh ip int br | ex una
+Interface                  IP-Address      OK? Method Status                Protocol
+FastEthernet0/0            192.168.70.251  YES DHCP   up                    up      
+Router#
+Router#monitor capture buffer CAPTURE_BUFFER
+Router#monitor capture buffer CAPTURE_BUFFER filter access-list 111
+Filter Association succeeded
+Router#
+Router#monitor capture point ip ?
+  cef               IPv4 CEF
+  process-switched  Process switched packets
+Router#monitor capture point ip cef ICMP fastEthernet 0/0 ?
+  both  capture ingress and egress
+  in    capture on ingress
+  out   capture on egress
+Router#monitor capture point ip cef ICMP fastEthernet 0/0 both
+Router#
+Router#monitor capture point associate ICMP CAPTURE_BUFFER
+Router#monitor capture point start ICMP                   
+Router#
+*Nov  4 01:47:56.391: %BUFCAP-6-ENABLE: Capture Point ICMP enabled.
+Router#
+Router#ping 192.168.70.39 rep 10
+Type escape sequence to abort.
+Sending 10, 100-byte ICMP Echos to 192.168.70.39, timeout is 2 seconds:
+.!!!!!!!!!
+Success rate is 90 percent (9/10), round-trip min/avg/max = 1/1/4 ms
+Router#
+Router#sho monitor capture buffer CAPTURE_BUFFER parameters
+Capture buffer CAPTURE_BUFFER (linear buffer)
+Buffer Size : 1048576 bytes, Max Element Size : 68 bytes, Packets : 9
+Allow-nth-pak : 0, Duration : 0 (seconds), Max packets : 0, pps : 0
+Associated Capture Points:
+Name : ICMP, Status : Active
+Configuration:
+monitor capture buffer CAPTURE_BUFFER
+monitor capture point associate ICMP CAPTURE_BUFFER
+monitor capture buffer CAPTURE_BUFFER filter access-list 111
+Router#
+Router#sho monitor capture point all
+Status Information for Capture Point ICMP
+IPv4 CEF
+Switch Path: IPv4 CEF            , Capture Buffer: CAPTURE_BUFFER      
+Status : Active
+Configuration:
+monitor capture point ip cef ICMP FastEthernet0/0 both
+Router#
+Router#monitor capture point stop ICMP
+Router#monitor capture buffer CAPTURE_BUFFER export ftp://User123:Password123@10.16.11.252/CAPTURE_11-4-2016.pcap
+Writing CAPTURE_11-4-2016.pcap
+Router#
+
+Done!!!  The capture was FTP'd to my PC and I can open it in WireShark
+Below is a screen shot of the packet capture... you'll see that only the reply packets were captured.  This is because in this simple lab setup and test, the pings were generated from the interface that was being captured.  Had I been capturing traffic flowing through the router we would've seen both the requests and the replies.
+
+
+
+
+
